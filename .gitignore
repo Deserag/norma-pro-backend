@@ -5,6 +5,8 @@
 
 # Logs
 logs
+env
+.env
 *.log
 npm-debug.log*
 pnpm-debug.log*
