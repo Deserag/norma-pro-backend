@@ -38,25 +38,143 @@ export class ClientService {
     }
   }
 
-  async getClientbyId(id: string){
+  async getClientbyId(id: string) {
     try {
-      const findClient = await this._prisma.company.findUnique({
-        where: { id: id}
-      })
+      const client = await this._prisma.company.findUnique({
+        where: { id },
+        include: {
+          memberships: {
+            // where: { deletedAt: null },
+            include: {
+              user: {
+                select: {
+                  id: true,
+                  email: true,
+                  fullName: true,
+                  createdAt: true,
+                  updatedAt: true,
+                  // deletedAt: true,
+                },
+              },
+              role: {
+                select: {
+                  id: true,
+                  name: true,
+                },
+              },
+            },
+          },
+          orders: {
+            where: { deletedAt: null },
+            include: {
+              status: {
+                select: {
+                  id: true,
+                  name: true,
+                },
+              },
+            },
+          },
+          companyDocs: {
+            where: { deletedAt: null },
+            include: {
+              document: {
+                select: {
+                  id: true,
+                  code: true,
+                  title: true,
+                  description: true,
+                  createdAt: true,
+                  updatedAt: true,
+                  deletedAt: true,
+                },
+              },
+              pinnedVersion: {
+                select: {
+                  id: true,
+                  versionLabel: true,
+                  fileUrl: true,
+                  effectiveDate: true,
+                  publishedDate: true,
+                  isCurrent: true,
+                  createdAt: true,
+                  updatedAt: true,
+                  deletedAt: true,
+                },
+              },
+            },
+          },
+        },
+      });
 
-      const findUsersCompany = await this._prisma.membership.findMany({
-        where: { companyId: findClient?.id}
-      })
+      if (!client) {
+        throw new HttpException('Клиент не найден', HttpStatus.NOT_FOUND);
+      }
 
-      const findOrdersCompany = await this._prisma.order.findMany({
-        where: {companyId: findClient?.id}
-      })
-
-      // const findDOcsCompany = await this._prisma.findMany({
-      //   where: {c}
-      // })
-    }
-    catch (error){
+      return {
+        id: client.id,
+        name: client.name,
+        inn: client.inn,
+        createdAt: client.createdAt,
+        updatedAt: client.updatedAt,
+        deletedAt: client.deletedAt,
+        createdById: client.createdById,
+        users: client.memberships.map((membership) => ({
+          id: membership.user.id,
+          email: membership.user.email,
+          fullName: membership.user.fullName,
+          createdAt: membership.user.createdAt,
+          updatedAt: membership.user.updatedAt,
+          // deletedAt: membership.user.deletedAt,
+          role: {
+            id: membership.role.id,
+            name: membership.role.name,
+          },
+        })),
+        orders: client.orders.map((order) => ({
+          id: order.id,
+          amount: order.amount,
+          status: {
+            id: order.status.id,
+            name: order.status.name,
+          },
+          createdAt: order.createdAt,
+          updatedAt: order.updatedAt,
+          deletedAt: order.deletedAt,
+          createdById: order.createdById,
+        })),
+        documents: client.companyDocs.map((doc) => ({
+          id: doc.id,
+          document: {
+            id: doc.document.id,
+            code: doc.document.code,
+            title: doc.document.title,
+            description: doc.document.description,
+            createdAt: doc.document.createdAt,
+            updatedAt: doc.document.updatedAt,
+            deletedAt: doc.document.deletedAt,
+          },
+          pinnedVersion: doc.pinnedVersion
+            ? {
+                id: doc.pinnedVersion.id,
+                versionLabel: doc.pinnedVersion.versionLabel,
+                fileUrl: doc.pinnedVersion.fileUrl,
+                effectiveDate: doc.pinnedVersion.effectiveDate,
+                publishedDate: doc.pinnedVersion.publishedDate,
+                isCurrent: doc.pinnedVersion.isCurrent,
+                createdAt: doc.pinnedVersion.createdAt,
+                updatedAt: doc.pinnedVersion.updatedAt,
+                deletedAt: doc.pinnedVersion.deletedAt,
+              }
+            : null,
+          notes: doc.notes,
+          createdAt: doc.createdAt,
+          updatedAt: doc.updatedAt,
+          deletedAt: doc.deletedAt,
+          createdById: doc.createdById,
+        })),
+      };
+    } catch (error) {
       throw new HttpException(
         'Ошибка при получении клиента: ' + error.message,
         HttpStatus.BAD_REQUEST,
