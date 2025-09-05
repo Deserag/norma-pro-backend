@@ -1,0 +1,206 @@
+{
+  "Id": "71722",
+  "TypeUid": "4b6678a3-4f9a-4d7c-88f3-316ec58a1e4e",
+  "Uid": "997a9cbf-8cda-46cd-b90b-1be4528f3c13",
+  "Name": "Проект по работе с контрагентом Интегрированная структура ракетного двигателестроения (ИСРД)",
+  "CreationAuthor": {
+    "Id": "405",
+    "TypeUid": "18faf3ae-03c9-4e64-b02a-95dd63e54c4d",
+    "Uid": "704860c8-d0ad-4795-bbe5-b77318c25bf5",
+    "Name": "Порошин Станислав Владимирович"
+  },
+  "CreationDate": "12/08/2020 10:23:50",
+  "ChangeDate": "",
+  "Folder": {
+    "Id": "65449",
+    "TypeUid": "4b6678a3-4f9a-4d7c-88f3-316ec58a1e4e",
+    "Uid": "1c04b21a-ede7-4c3a-a403-e3a6c93f6b5d",
+    "Name": "Проекты"
+  },
+  "Permissions": [
+    {
+      "Id": "644767",
+      "TypeUid": "96852bd2-3bb0-4c78-ac77-91b571ed9fa1",
+      "Uid": "903fbb53-8d66-4b9b-9716-0df38bff91e1",
+      "Name": ""
+    },
+    {
+      "Id": "644768",
+      "TypeUid": "96852bd2-3bb0-4c78-ac77-91b571ed9fa1",
+      "Uid": "90bf67b6-a51d-4875-b314-365137074565",
+      "Name": ""
+    },
+    {
+      "Id": "644769",
+      "TypeUid": "96852bd2-3bb0-4c78-ac77-91b571ed9fa1",
+      "Uid": "19a91720-ea85-4e2d-ba1b-5eb8e794b31b",
+      "Name": ""
+    },
+    {
+      "Id": "644770",
+      "TypeUid": "96852bd2-3bb0-4c78-ac77-91b571ed9fa1",
+      "Uid": "1688f3a0-6116-47a1-83ec-a4e4fb1eaea3",
+      "Name": ""
+    },
+    {
+      "Id": "644771",
+      "TypeUid": "96852bd2-3bb0-4c78-ac77-91b571ed9fa1",
+      "Uid": "9b4d5bfc-e91d-4310-b5ea-cac3fde5914c",
+      "Name": ""
+    },
+    {
+      "Id": "644772",
+      "TypeUid": "96852bd2-3bb0-4c78-ac77-91b571ed9fa1",
+      "Uid": "17cf9cd7-ce78-4078-b80e-535c21edc567",
+      "Name": ""
+    },
+    {
+      "Id": "644773",
+      "TypeUid": "96852bd2-3bb0-4c78-ac77-91b571ed9fa1",
+      "Uid": "a304bf29-dbbc-4fc0-b5b3-d189af71f85f",
+      "Name": ""
+    },
+    {
+      "Id": "644774",
+      "TypeUid": "96852bd2-3bb0-4c78-ac77-91b571ed9fa1",
+      "Uid": "87963bea-764b-441b-9ae2-10c6c8e98d97",
+      "Name": ""
+    },
+    {
+      "Id": "644775",
+      "TypeUid": "96852bd2-3bb0-4c78-ac77-91b571ed9fa1",
+      "Uid": "84b46ba0-ee3e-4869-b691-f72adda5b785",
+      "Name": ""
+    },
+    {
+      "Id": "644776",
+      "TypeUid": "96852bd2-3bb0-4c78-ac77-91b571ed9fa1",
+      "Uid": "472a5f5a-bfce-4e59-a837-35704dc9b19e",
+      "Name": ""
+    },
+    {
+      "Id": "644777",
+      "TypeUid": "96852bd2-3bb0-4c78-ac77-91b571ed9fa1",
+      "Uid": "32e4a2a4-c026-4163-8add-64b90b53687d",
+      "Name": ""
+    },
+    {
+      "Id": "644778",
+      "TypeUid": "96852bd2-3bb0-4c78-ac77-91b571ed9fa1",
+      "Uid": "d6675c19-8499-4ac3-8dc5-f3630bf60260",
+      "Name": ""
+    },
+    {
+      "Id": "644779",
+      "TypeUid": "96852bd2-3bb0-4c78-ac77-91b571ed9fa1",
+      "Uid": "76f958e4-da47-45cc-9d83-9b18b0f5c5ce",
+      "Name": ""
+    },
+    {
+      "Id": "644780",
+      "TypeUid": "96852bd2-3bb0-4c78-ac77-91b571ed9fa1",
+      "Uid": "61981676-f628-4ae1-9dd9-853394b831c5",
+      "Name": ""
+    },
+    {
+      "Id": "644781",
+      "TypeUid": "96852bd2-3bb0-4c78-ac77-91b571ed9fa1",
+      "Uid": "a7c8e392-21de-43fe-82a8-795f3a9051e5",
+      "Name": ""
+    },
+    {
+      "Id": "644782",
+      "TypeUid": "96852bd2-3bb0-4c78-ac77-91b571ed9fa1",
+      "Uid": "1f95e95d-7cc7-472a-847b-d4368ffb0de3",
+      "Name": ""
+    },
+    {
+      "Id": "644783",
+      "TypeUid": "96852bd2-3bb0-4c78-ac77-91b571ed9fa1",
+      "Uid": "2979fa30-c2fe-46f7-99e4-a8bda11b3a72",
+      "Name": ""
+    },
+    {
+      "Id": "644784",
+      "TypeUid": "96852bd2-3bb0-4c78-ac77-91b571ed9fa1",
+      "Uid": "02ebb2e0-186a-40ab-ae4c-3c83768030ff",
+      "Name": ""
+    },
+    {
+      "Id": "644785",
+      "TypeUid": "96852bd2-3bb0-4c78-ac77-91b571ed9fa1",
+      "Uid": "1d24cd89-4ff0-44c2-8642-1606b019160a",
+      "Name": ""
+    },
+    {
+      "Id": "644786",
+      "TypeUid": "96852bd2-3bb0-4c78-ac77-91b571ed9fa1",
+      "Uid": "07c40a37-4422-4993-8ffb-ae0d425c7f83",
+      "Name": ""
+    },
+    {
+      "Id": "644787",
+      "TypeUid": "96852bd2-3bb0-4c78-ac77-91b571ed9fa1",
+      "Uid": "9e53abf3-8186-420d-baa4-5ce22b52ff8b",
+      "Name": ""
+    },
+    {
+      "Id": "644788",
+      "TypeUid": "96852bd2-3bb0-4c78-ac77-91b571ed9fa1",
+      "Uid": "c6c50b25-4c92-46f3-bd85-e99fb8fcb7bb",
+      "Name": ""
+    },
+    {
+      "Id": "644789",
+      "TypeUid": "96852bd2-3bb0-4c78-ac77-91b571ed9fa1",
+      "Uid": "6293c657-51b9-4a36-a32a-1eb7b41779ba",
+      "Name": ""
+    },
+    {
+      "Id": "769785",
+      "TypeUid": "96852bd2-3bb0-4c78-ac77-91b571ed9fa1",
+      "Uid": "08c0d8fa-44d2-4eaf-ba3d-44ebb57f1903",
+      "Name": ""
+    },
+    {
+      "Id": "769786",
+      "TypeUid": "96852bd2-3bb0-4c78-ac77-91b571ed9fa1",
+      "Uid": "084b49c9-dd78-4fb1-bca0-6772bffa3f1d",
+      "Name": ""
+    },
+    {
+      "Id": "769787",
+      "TypeUid": "96852bd2-3bb0-4c78-ac77-91b571ed9fa1",
+      "Uid": "7198ace7-862c-4500-9989-3446297c61f8",
+      "Name": ""
+    },
+    {
+      "Id": "769788",
+      "TypeUid": "96852bd2-3bb0-4c78-ac77-91b571ed9fa1",
+      "Uid": "2e2d3c9a-e7bb-40b7-821a-9cbd7c22758e",
+      "Name": ""
+    },
+    {
+      "Id": "769789",
+      "TypeUid": "96852bd2-3bb0-4c78-ac77-91b571ed9fa1",
+      "Uid": "27c070a5-bbe2-41dc-b22b-f5ea39bbc6ee",
+      "Name": ""
+    }
+  ],
+  "SortTypeId": "0",
+  "ChangeAuthor": null,
+  "InheritPermissions": "True",
+  "Virtual": "False",
+  "IsArchived": "",
+  "ArchiveDate": "",
+  "ArchiveAuthor": null,
+  "IsDeleted": "False",
+  "HardDelete": "False",
+  "OldFolder": null,
+  "DeleteAuthor": null,
+  "FolderType": "0",
+  "WebDocument": null,
+  "ImageUrl": "",
+  "HasChildFolders": "False"
+}
+

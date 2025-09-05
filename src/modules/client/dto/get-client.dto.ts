@@ -2,9 +2,30 @@ import { ApiProperty } from '@nestjs/swagger';
 import { IsString, IsDate, IsOptional, IsNumber } from 'class-validator';
 
 export class getClientDTO {
-    @IsOptional() @IsNumber() @ApiProperty({ example: 1 }) page?: number;
-    @IsOptional() @IsNumber() @ApiProperty({ example: 10 }) size?: number;
-    @IsOptional() @IsString() @ApiProperty({ example: 'часть имени' }) q?: string;
+    @IsOptional()
+    @IsString()
+    @ApiProperty({example: '', required: true})
+    clientId: string
+
+    @IsOptional()
+    @IsString()
+    @ApiProperty({example: '', required: true})
+    name: string
+
+    @IsOptional()
+    @IsString()
+    @ApiProperty({example: '', required: true})
+    inn: string
+
+    @IsOptional()
+    @IsNumber()
+    @ApiProperty({example: 1, required: true})
+    page: 5
+
+    @IsOptional()
+    @IsNumber()
+    @ApiProperty({example: 10, required: true})
+    size: 10
 }
 
 export class getUsersListClientDTO {

@@ -1,18 +1,11 @@
-// ========================
-//  Настройки Prisma
-// ========================
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "postgresql" // можно заменить на mysql/sqlserver/sqlite
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
-
-// ========================
-//  Пользователи и компании
-// ========================
 
 model User {
   id           String       @id @default(uuid())
@@ -22,10 +15,36 @@ model User {
   isActive     Boolean      @default(true) @map("is_active")
   createdAt    DateTime     @default(now()) @map("created_at")
   updatedAt    DateTime     @updatedAt @map("updated_at")
+  deletedAt    DateTime?    @map("deleted_at")
+  createdById  String?      @map("created_by_id")
 
-  memberships  Membership[]
-  notifications Notification[]
-  projects      Project[]   @relation("ProjectCreatedBy")
+  memberships          Membership[]       @relation("UserMemberships")
+  createdMemberships   Membership[]       @relation("MembershipCreator")
+  notifications        Notification[]     @relation("NotificationUser")
+  createdNotifications Notification[]     @relation("NotificationCreator")
+  projects             Project[]          @relation("ProjectCreatedBy")
+  createdProjects      Project[]          @relation("ProjectCreator")
+  creator              User?              @relation("UserCreator", fields: [createdById], references: [id])
+  createdUsers         User[]             @relation("UserCreator")
+  createdCompanies     Company[]          @relation("CompanyCreator")
+  createdRoles         Role[]             @relation("RoleCreator")
+  createdDocumentTypes DocumentType[]     @relation("DocumentTypeCreator")
+  createdDocumentStatuses DocumentStatus[] @relation("DocumentStatusCreator")
+  createdDocuments     Document[]         @relation("DocumentCreator")
+  createdDocumentVersions DocumentVersion[] @relation("DocumentVersionCreator")
+  createdTags          Tag[]              @relation("TagCreator")
+  createdDocumentTags  DocumentTag[]      @relation("DocumentTagCreator")
+  createdProjectDocuments ProjectDocument[] @relation("ProjectDocumentCreator")
+  createdCompanyDocuments CompanyDocument[] @relation("CompanyDocumentCreator")
+  createdOrderStatuses OrderStatus[]      @relation("OrderStatusCreator")
+  createdOrders        Order[]            @relation("OrderCreator")
+  createdPackageStatuses PackageStatus[]  @relation("PackageStatusCreator")
+  createdPackages      Package[]          @relation("PackageCreator")
+  createdPackageItems  PackageItem[]      @relation("PackageItemCreator")
+  createdSubscriptionPlans SubscriptionPlan[] @relation("SubscriptionPlanCreator")
+  createdSubscriptionStatuses SubscriptionStatus[] @relation("SubscriptionStatusCreator")
+  createdSubscriptions Subscription[]     @relation("SubscriptionCreator")
+  createdNotificationTypes NotificationType[] @relation("NotificationTypeCreator")
 
   @@map("users")
 }
@@ -33,14 +52,18 @@ model User {
 model Company {
   id        String       @id @default(uuid())
   name      String
-  inn       String?      // ИНН может быть пустым
+  inn       String?
   createdAt DateTime     @default(now()) @map("created_at")
   updatedAt DateTime     @updatedAt @map("updated_at")
+  deletedAt DateTime?    @map("deleted_at")
+  createdById String?    @map("created_by_id")
 
   memberships Membership[]
   projects    Project[]
   orders      Order[]
   subscriptions Subscription[]
+  companyDocs CompanyDocument[]
+  creator     User?       @relation("CompanyCreator", fields: [createdById], references: [id])
 
   @@map("companies")
 }
@@ -48,8 +71,13 @@ model Company {
 model Role {
   id   Int     @id @default(autoincrement())
   name String  @unique
+  createdById String? @map("created_by_id")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
 
   memberships Membership[]
+  creator     User?       @relation("RoleCreator", fields: [createdById], references: [id])
 
   @@map("roles")
 }
@@ -60,17 +88,17 @@ model Membership {
   companyId String   @map("company_id")
   roleId    Int      @map("role_id")
   createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+  createdById String? @map("created_by_id")
 
-  user    User    @relation(fields: [userId], references: [id])
+  user    User    @relation("UserMemberships", fields: [userId], references: [id])
   company Company @relation(fields: [companyId], references: [id])
   role    Role    @relation(fields: [roleId], references: [id])
+  creator User?   @relation("MembershipCreator", fields: [createdById], references: [id])
 
   @@map("memberships")
 }
-
-// ========================
-//  Проекты
-// ========================
 
 model Project {
   id          String   @id @default(uuid())
@@ -80,23 +108,27 @@ model Project {
   createdBy   String   @map("created_by")
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
+  deletedAt   DateTime? @map("deleted_at")
+  createdById String? @map("created_by_id")
 
   company Company @relation(fields: [companyId], references: [id])
   creator User   @relation("ProjectCreatedBy", fields: [createdBy], references: [id])
+  projectCreator User? @relation("ProjectCreator", fields: [createdById], references: [id])
   projectDocs ProjectDocument[]
 
   @@map("projects")
 }
 
-// ========================
-//  Документы
-// ========================
-
 model DocumentType {
   id   Int    @id @default(autoincrement())
   name String @unique
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+  createdById String? @map("created_by_id")
 
   documents Document[]
+  creator   User?     @relation("DocumentTypeCreator", fields: [createdById], references: [id])
 
   @@map("document_types")
 }
@@ -104,33 +136,42 @@ model DocumentType {
 model DocumentStatus {
   id   Int    @id @default(autoincrement())
   name String @unique
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+  createdById String? @map("created_by_id")
 
   documents Document[]
+  creator   User?     @relation("DocumentStatusCreator", fields: [createdById], references: [id])
 
   @@map("document_statuses")
 }
 
 model Document {
   id              String           @id @default(uuid())
-  code            String           // например ГОСТ Р 123-2020
+  code            String
   title           String
   typeId          Int              @map("type_id")
   statusId        Int              @map("status_id")
   description     String?
-  currentVersionId String?         @map("current_version_id") @unique // Добавляем @unique
-  replacedById    String?         @map("replaced_by_id")
+  currentVersionId String?         @map("current_version_id") @unique
+  replacedById    String?          @map("replaced_by_id")
   createdAt       DateTime         @default(now()) @map("created_at")
   updatedAt       DateTime         @updatedAt @map("updated_at")
+  deletedAt       DateTime?        @map("deleted_at")
+  createdById     String?          @map("created_by_id")
 
   type            DocumentType     @relation(fields: [typeId], references: [id])
   status          DocumentStatus   @relation(fields: [statusId], references: [id])
   versions        DocumentVersion[]
   tags            DocumentTag[]
   projectDocs     ProjectDocument[]
+  companyDocs     CompanyDocument[]
   currentVersion  DocumentVersion? @relation("CurrentVersion", fields: [currentVersionId], references: [id])
   replacedBy      Document?        @relation("ReplacedBy", fields: [replacedById], references: [id])
   replaces        Document[]       @relation("ReplacedBy")
   packageItems    PackageItem[]    @relation("DocumentToPackageItem")
+  creator         User?            @relation("DocumentCreator", fields: [createdById], references: [id])
 
   @@map("documents")
 }
@@ -145,20 +186,31 @@ model DocumentVersion {
   checksum        String?
   isCurrent       Boolean  @default(false) @map("is_current")
   createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+  deletedAt       DateTime? @map("deleted_at")
+  createdById     String?  @map("created_by_id")
 
   document        Document @relation(fields: [documentId], references: [id])
   pinnedIn        ProjectDocument[] @relation("PinnedVersion")
+  companyPinnedIn CompanyDocument[] @relation("CompanyPinnedVersion")
   currentFor      Document? @relation("CurrentVersion")
-  packageItems    PackageItem[] @relation("VersionToPackageItem") // Add this line
+  packageItems    PackageItem[] @relation("VersionToPackageItem")
+  creator         User?    @relation("DocumentVersionCreator", fields: [createdById], references: [id])
+
+  @@map("document_versions")
 }
 
 model Tag {
   id        Int           @id @default(autoincrement())
   name      String
-  tagType   String?       @map("tag_type") // THEME, SYSTEM и т.д.
+  tagType   String?       @map("tag_type")
   createdAt DateTime      @default(now()) @map("created_at")
+  updatedAt DateTime      @updatedAt @map("updated_at")
+  deletedAt DateTime?     @map("deleted_at")
+  createdById String?     @map("created_by_id")
 
   documentTags DocumentTag[]
+  creator      User?       @relation("TagCreator", fields: [createdById], references: [id])
 
   @@map("tags")
 }
@@ -166,17 +218,18 @@ model Tag {
 model DocumentTag {
   documentId String @map("document_id")
   tagId      Int    @map("tag_id")
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+  deletedAt  DateTime? @map("deleted_at")
+  createdById String? @map("created_by_id")
 
   document Document @relation(fields: [documentId], references: [id])
   tag      Tag      @relation(fields: [tagId], references: [id])
+  creator  User?    @relation("DocumentTagCreator", fields: [createdById], references: [id])
 
   @@id([documentId, tagId])
   @@map("document_tags")
 }
-
-// ========================
-//  Проекты ↔ Документы
-// ========================
 
 model ProjectDocument {
   id              String   @id @default(uuid())
@@ -185,23 +238,47 @@ model ProjectDocument {
   pinnedVersionId String?  @map("pinned_version_id")
   notes           String?
   createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+  deletedAt       DateTime? @map("deleted_at")
+  createdById     String?  @map("created_by_id")
 
-  project  Project         @relation(fields: [projectId], references: [id])
-  document Document        @relation(fields: [documentId], references: [id])
+  project       Project         @relation(fields: [projectId], references: [id])
+  document      Document        @relation(fields: [documentId], references: [id])
   pinnedVersion DocumentVersion? @relation("PinnedVersion", fields: [pinnedVersionId], references: [id])
+  creator       User?           @relation("ProjectDocumentCreator", fields: [createdById], references: [id])
 
   @@map("project_documents")
 }
 
-// ========================
-//  Заказы и пакеты
-// ========================
+model CompanyDocument {
+  id              String   @id @default(uuid())
+  companyId       String   @map("company_id")
+  documentId      String   @map("document_id")
+  pinnedVersionId String?  @map("pinned_version_id")
+  notes           String?
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+  deletedAt       DateTime? @map("deleted_at")
+  createdById     String?  @map("created_by_id")
+
+  company       Company         @relation(fields: [companyId], references: [id])
+  document      Document        @relation(fields: [documentId], references: [id])
+  pinnedVersion DocumentVersion? @relation("CompanyPinnedVersion", fields: [pinnedVersionId], references: [id])
+  creator       User?           @relation("CompanyDocumentCreator", fields: [createdById], references: [id])
+
+  @@map("company_documents")
+}
 
 model OrderStatus {
   id   Int    @id @default(autoincrement())
   name String @unique
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+  createdById String? @map("created_by_id")
 
   orders Order[]
+  creator User?  @relation("OrderStatusCreator", fields: [createdById], references: [id])
 
   @@map("order_statuses")
 }
@@ -213,10 +290,13 @@ model Order {
   amount    Float
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+  createdById String? @map("created_by_id")
 
   company Company     @relation(fields: [companyId], references: [id])
   status  OrderStatus @relation(fields: [statusId], references: [id])
   packages Package[]
+  creator User?       @relation("OrderCreator", fields: [createdById], references: [id])
 
   @@map("orders")
 }
@@ -224,8 +304,13 @@ model Order {
 model PackageStatus {
   id   Int    @id @default(autoincrement())
   name String @unique
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+  createdById String? @map("created_by_id")
 
   packages Package[]
+  creator  User?   @relation("PackageStatusCreator", fields: [createdById], references: [id])
 
   @@map("package_statuses")
 }
@@ -236,10 +321,13 @@ model Package {
   statusId  Int      @map("status_id")
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+  createdById String? @map("created_by_id")
 
   order   Order         @relation(fields: [orderId], references: [id])
   status  PackageStatus @relation(fields: [statusId], references: [id])
   items   PackageItem[]
+  creator User?         @relation("PackageCreator", fields: [createdById], references: [id])
 
   @@map("packages")
 }
@@ -249,23 +337,29 @@ model PackageItem {
   packageId  String   @map("package_id")
   documentId String   @map("document_id")
   versionId  String   @map("version_id")
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+  deletedAt  DateTime? @map("deleted_at")
+  createdById String? @map("created_by_id")
 
   package    Package  @relation(fields: [packageId], references: [id])
   document   Document @relation("DocumentToPackageItem", fields: [documentId], references: [id])
-  version    DocumentVersion @relation("VersionToPackageItem", fields: [versionId], references: [id]) // Update relation name
+  version    DocumentVersion @relation("VersionToPackageItem", fields: [versionId], references: [id])
+  creator    User?    @relation("PackageItemCreator", fields: [createdById], references: [id])
 
   @@map("package_items")
 }
 
-// ========================
-//  Подписки
-// ========================
-
 model SubscriptionPlan {
   id   Int    @id @default(autoincrement())
   name String @unique
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+  createdById String? @map("created_by_id")
 
   subscriptions Subscription[]
+  creator       User?         @relation("SubscriptionPlanCreator", fields: [createdById], references: [id])
 
   @@map("subscription_plans")
 }
@@ -273,8 +367,13 @@ model SubscriptionPlan {
 model SubscriptionStatus {
   id   Int    @id @default(autoincrement())
   name String @unique
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+  createdById String? @map("created_by_id")
 
   subscriptions Subscription[]
+  creator       User?         @relation("SubscriptionStatusCreator", fields: [createdById], references: [id])
 
   @@map("subscription_statuses")
 }
@@ -288,23 +387,27 @@ model Subscription {
   endDate   DateTime @map("end_date")
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+  createdById String? @map("created_by_id")
 
   company Company           @relation(fields: [companyId], references: [id])
   plan    SubscriptionPlan  @relation(fields: [planId], references: [id])
   status  SubscriptionStatus @relation(fields: [statusId], references: [id])
+  creator User?             @relation("SubscriptionCreator", fields: [createdById], references: [id])
 
   @@map("subscriptions")
 }
 
-// ========================
-//  Уведомления
-// ========================
-
 model NotificationType {
   id   Int    @id @default(autoincrement())
   name String @unique
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+  createdById String? @map("created_by_id")
 
   notifications Notification[]
+  creator       User?         @relation("NotificationTypeCreator", fields: [createdById], references: [id])
 
   @@map("notification_types")
 }
@@ -316,9 +419,13 @@ model Notification {
   message   String
   isRead    Boolean  @default(false) @map("is_read")
   createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+  createdById String? @map("created_by_id")
 
-  user User @relation(fields: [userId], references: [id])
+  user User @relation("NotificationUser", fields: [userId], references: [id])
   type NotificationType @relation(fields: [typeId], references: [id])
+  creator User? @relation("NotificationCreator", fields: [createdById], references: [id])
 
   @@map("notifications")
 }
