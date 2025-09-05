@@ -1,0 +1,324 @@
+// ========================
+//  Настройки Prisma
+// ========================
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql" // можно заменить на mysql/sqlserver/sqlite
+  url      = env("DATABASE_URL")
+}
+
+// ========================
+//  Пользователи и компании
+// ========================
+
+model User {
+  id           String       @id @default(uuid())
+  email        String       @unique
+  passwordHash String       @map("password_hash")
+  fullName     String       @map("full_name")
+  isActive     Boolean      @default(true) @map("is_active")
+  createdAt    DateTime     @default(now()) @map("created_at")
+  updatedAt    DateTime     @updatedAt @map("updated_at")
+
+  memberships  Membership[]
+  notifications Notification[]
+  projects      Project[]   @relation("ProjectCreatedBy")
+
+  @@map("users")
+}
+
+model Company {
+  id        String       @id @default(uuid())
+  name      String
+  inn       String?      // ИНН может быть пустым
+  createdAt DateTime     @default(now()) @map("created_at")
+  updatedAt DateTime     @updatedAt @map("updated_at")
+
+  memberships Membership[]
+  projects    Project[]
+  orders      Order[]
+  subscriptions Subscription[]
+
+  @@map("companies")
+}
+
+model Role {
+  id   Int     @id @default(autoincrement())
+  name String  @unique
+
+  memberships Membership[]
+
+  @@map("roles")
+}
+
+model Membership {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  companyId String   @map("company_id")
+  roleId    Int      @map("role_id")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user    User    @relation(fields: [userId], references: [id])
+  company Company @relation(fields: [companyId], references: [id])
+  role    Role    @relation(fields: [roleId], references: [id])
+
+  @@map("memberships")
+}
+
+// ========================
+//  Проекты
+// ========================
+
+model Project {
+  id          String   @id @default(uuid())
+  companyId   String   @map("company_id")
+  name        String
+  description String?
+  createdBy   String   @map("created_by")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  company Company @relation(fields: [companyId], references: [id])
+  creator User   @relation("ProjectCreatedBy", fields: [createdBy], references: [id])
+  projectDocs ProjectDocument[]
+
+  @@map("projects")
+}
+
+// ========================
+//  Документы
+// ========================
+
+model DocumentType {
+  id   Int    @id @default(autoincrement())
+  name String @unique
+
+  documents Document[]
+
+  @@map("document_types")
+}
+
+model DocumentStatus {
+  id   Int    @id @default(autoincrement())
+  name String @unique
+
+  documents Document[]
+
+  @@map("document_statuses")
+}
+
+model Document {
+  id              String           @id @default(uuid())
+  code            String           // например ГОСТ Р 123-2020
+  title           String
+  typeId          Int              @map("type_id")
+  statusId        Int              @map("status_id")
+  description     String?
+  currentVersionId String?         @map("current_version_id") @unique // Добавляем @unique
+  replacedById    String?         @map("replaced_by_id")
+  createdAt       DateTime         @default(now()) @map("created_at")
+  updatedAt       DateTime         @updatedAt @map("updated_at")
+
+  type            DocumentType     @relation(fields: [typeId], references: [id])
+  status          DocumentStatus   @relation(fields: [statusId], references: [id])
+  versions        DocumentVersion[]
+  tags            DocumentTag[]
+  projectDocs     ProjectDocument[]
+  currentVersion  DocumentVersion? @relation("CurrentVersion", fields: [currentVersionId], references: [id])
+  replacedBy      Document?        @relation("ReplacedBy", fields: [replacedById], references: [id])
+  replaces        Document[]       @relation("ReplacedBy")
+  packageItems    PackageItem[]    @relation("DocumentToPackageItem")
+
+  @@map("documents")
+}
+
+model DocumentVersion {
+  id              String   @id @default(uuid())
+  documentId      String   @map("document_id")
+  versionLabel    String   @map("version_label")
+  effectiveDate   DateTime? @map("effective_date")
+  publishedDate   DateTime? @map("published_date")
+  fileUrl         String   @map("file_url")
+  checksum        String?
+  isCurrent       Boolean  @default(false) @map("is_current")
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  document        Document @relation(fields: [documentId], references: [id])
+  pinnedIn        ProjectDocument[] @relation("PinnedVersion")
+  currentFor      Document? @relation("CurrentVersion")
+  packageItems    PackageItem[] @relation("VersionToPackageItem") // Add this line
+}
+
+model Tag {
+  id        Int           @id @default(autoincrement())
+  name      String
+  tagType   String?       @map("tag_type") // THEME, SYSTEM и т.д.
+  createdAt DateTime      @default(now()) @map("created_at")
+
+  documentTags DocumentTag[]
+
+  @@map("tags")
+}
+
+model DocumentTag {
+  documentId String @map("document_id")
+  tagId      Int    @map("tag_id")
+
+  document Document @relation(fields: [documentId], references: [id])
+  tag      Tag      @relation(fields: [tagId], references: [id])
+
+  @@id([documentId, tagId])
+  @@map("document_tags")
+}
+
+// ========================
+//  Проекты ↔ Документы
+// ========================
+
+model ProjectDocument {
+  id              String   @id @default(uuid())
+  projectId       String   @map("project_id")
+  documentId      String   @map("document_id")
+  pinnedVersionId String?  @map("pinned_version_id")
+  notes           String?
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  project  Project         @relation(fields: [projectId], references: [id])
+  document Document        @relation(fields: [documentId], references: [id])
+  pinnedVersion DocumentVersion? @relation("PinnedVersion", fields: [pinnedVersionId], references: [id])
+
+  @@map("project_documents")
+}
+
+// ========================
+//  Заказы и пакеты
+// ========================
+
+model OrderStatus {
+  id   Int    @id @default(autoincrement())
+  name String @unique
+
+  orders Order[]
+
+  @@map("order_statuses")
+}
+
+model Order {
+  id        String   @id @default(uuid())
+  companyId String   @map("company_id")
+  statusId  Int      @map("status_id")
+  amount    Float
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  company Company     @relation(fields: [companyId], references: [id])
+  status  OrderStatus @relation(fields: [statusId], references: [id])
+  packages Package[]
+
+  @@map("orders")
+}
+
+model PackageStatus {
+  id   Int    @id @default(autoincrement())
+  name String @unique
+
+  packages Package[]
+
+  @@map("package_statuses")
+}
+
+model Package {
+  id        String   @id @default(uuid())
+  orderId   String   @map("order_id")
+  statusId  Int      @map("status_id")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  order   Order         @relation(fields: [orderId], references: [id])
+  status  PackageStatus @relation(fields: [statusId], references: [id])
+  items   PackageItem[]
+
+  @@map("packages")
+}
+
+model PackageItem {
+  id         String   @id @default(uuid())
+  packageId  String   @map("package_id")
+  documentId String   @map("document_id")
+  versionId  String   @map("version_id")
+
+  package    Package  @relation(fields: [packageId], references: [id])
+  document   Document @relation("DocumentToPackageItem", fields: [documentId], references: [id])
+  version    DocumentVersion @relation("VersionToPackageItem", fields: [versionId], references: [id]) // Update relation name
+
+  @@map("package_items")
+}
+
+// ========================
+//  Подписки
+// ========================
+
+model SubscriptionPlan {
+  id   Int    @id @default(autoincrement())
+  name String @unique
+
+  subscriptions Subscription[]
+
+  @@map("subscription_plans")
+}
+
+model SubscriptionStatus {
+  id   Int    @id @default(autoincrement())
+  name String @unique
+
+  subscriptions Subscription[]
+
+  @@map("subscription_statuses")
+}
+
+model Subscription {
+  id        String   @id @default(uuid())
+  companyId String   @map("company_id")
+  planId    Int      @map("plan_id")
+  statusId  Int      @map("status_id")
+  startDate DateTime @map("start_date")
+  endDate   DateTime @map("end_date")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  company Company           @relation(fields: [companyId], references: [id])
+  plan    SubscriptionPlan  @relation(fields: [planId], references: [id])
+  status  SubscriptionStatus @relation(fields: [statusId], references: [id])
+
+  @@map("subscriptions")
+}
+
+// ========================
+//  Уведомления
+// ========================
+
+model NotificationType {
+  id   Int    @id @default(autoincrement())
+  name String @unique
+
+  notifications Notification[]
+
+  @@map("notification_types")
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  typeId    Int      @map("type_id")
+  message   String
+  isRead    Boolean  @default(false) @map("is_read")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id])
+  type NotificationType @relation(fields: [typeId], references: [id])
+
+  @@map("notifications")
+}
