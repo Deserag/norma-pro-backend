@@ -17,8 +17,23 @@ export class CreateUserDto {
   @IsNotEmpty()
   @IsString()
   fullName: string;
+
+  @ApiProperty({ example: 'Иван Иванов', description: 'Полное имя пользователя' })
+  @IsNotEmpty()
+  @IsString()
+  companyId: string;
+
+  @ApiProperty({ example: 'Иван Иванов', description: 'Полное имя пользователя' })
+  @IsNotEmpty()
+  @IsString()
+  roleId: string;
+
 }
 
 export class UpdateUserDTO extends CreateUserDto {
+  @ApiProperty({ example: 'user@example.com', description: 'Электронная почта пользователя' })
+  @IsNotEmpty()
+  @IsEmail()
+  userId: string;
   
 }

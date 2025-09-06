@@ -7,6 +7,12 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum DocumentKind {
+  ORIGINAL
+  TRANSLATED
+  FORMATTED
+}
+
 model User {
   id           String       @id @default(uuid())
   email        String       @unique
@@ -45,6 +51,8 @@ model User {
   createdSubscriptionStatuses SubscriptionStatus[] @relation("SubscriptionStatusCreator")
   createdSubscriptions Subscription[]     @relation("SubscriptionCreator")
   createdNotificationTypes NotificationType[] @relation("NotificationTypeCreator")
+  createdTagCategories TagCategory[]      @relation("TagCategoryCreator")
+  createdTagCategoryTags TagCategoryTag[] @relation("TagCategoryTagCreator") // Добавлено обратное отношение
 
   @@map("users")
 }
@@ -160,6 +168,9 @@ model Document {
   updatedAt       DateTime         @updatedAt @map("updated_at")
   deletedAt       DateTime?        @map("deleted_at")
   createdById     String?          @map("created_by_id")
+  originalDocumentId String?       @map("original_document_id")
+  documentKind    DocumentKind     @default(ORIGINAL)
+  language        String?          @map("language")
 
   type            DocumentType     @relation(fields: [typeId], references: [id])
   status          DocumentStatus   @relation(fields: [statusId], references: [id])
@@ -172,6 +183,8 @@ model Document {
   replaces        Document[]       @relation("ReplacedBy")
   packageItems    PackageItem[]    @relation("DocumentToPackageItem")
   creator         User?            @relation("DocumentCreator", fields: [createdById], references: [id])
+  originalDocument Document?       @relation("OriginalDocument", fields: [originalDocumentId], references: [id])
+  derivedDocuments Document[]      @relation("OriginalDocument")
 
   @@map("documents")
 }
@@ -200,6 +213,20 @@ model DocumentVersion {
   @@map("document_versions")
 }
 
+model TagCategory {
+  id        Int           @id @default(autoincrement())
+  name      String        @unique
+  createdAt DateTime      @default(now()) @map("created_at")
+  updatedAt DateTime      @updatedAt @map("updated_at")
+  deletedAt DateTime?     @map("deleted_at")
+  createdById String?     @map("created_by_id")
+
+  tags      TagCategoryTag[]
+  creator   User?          @relation("TagCategoryCreator", fields: [createdById], references: [id])
+
+  @@map("tag_categories")
+}
+
 model Tag {
   id        Int           @id @default(autoincrement())
   name      String
@@ -210,9 +237,26 @@ model Tag {
   createdById String?     @map("created_by_id")
 
   documentTags DocumentTag[]
+  categories   TagCategoryTag[]
   creator      User?       @relation("TagCreator", fields: [createdById], references: [id])
 
   @@map("tags")
+}
+
+model TagCategoryTag {
+  tagId       Int
+  categoryId  Int
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  deletedAt   DateTime? @map("deleted_at")
+  createdById String? @map("created_by_id")
+
+  tag       Tag         @relation(fields: [tagId], references: [id])
+  category  TagCategory @relation(fields: [categoryId], references: [id])
+  creator   User?       @relation("TagCategoryTagCreator", fields: [createdById], references: [id])
+
+  @@id([tagId, categoryId])
+  @@map("tag_category_tags")
 }
 
 model DocumentTag {

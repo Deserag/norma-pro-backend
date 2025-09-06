@@ -1,0 +1,6 @@
+export * from './create-file.dto'
+export * from './create-category.dto'
+export * from './create-tag.dto'
+export * from './get-categories.dto'
+export * from './get-files.dto'
+export * from './get-tags.dto'
