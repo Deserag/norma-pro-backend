@@ -1,4 +1,4 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 
@@ -8,14 +8,12 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       ignoreExpiration: false,
-      secretOrKey: process.env.JWT_SECRET || 'secret',
+      secretOrKey: process.env.JWT_SECRET || 'super-secret-key', // лучше вынести в .env
     });
   }
 
   async validate(payload: any) {
-    if (!payload.sub) {
-      throw new UnauthorizedException();
-    }
-    return { userId: payload.sub, email: payload.email };
+    // payload = то, что ты зашифровал в токене
+    return { id: payload.sub, email: payload.email, fullName: payload.fullName };
   }
 }

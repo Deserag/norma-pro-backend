@@ -134,10 +134,10 @@ export class UserService {
 
   async getRolesList(getRole: GetListDTO, currentUserId: string) {
     try {
-      const isAdmin = await this.isSuperAdmin(currentUserId);
-      if (!isAdmin) {
-        throw new ForbiddenException('Только SuperAdmin может просматривать список ролей');
-      }
+      // const isAdmin = await this.isSuperAdmin(currentUserId);
+      // if (!isAdmin) {
+      //   throw new ForbiddenException('Только SuperAdmin может просматривать список ролей');
+      // }
 
       const { page = 1, size = 10 } = getRole;
       const [rows, totalCount] = await this._prisma.$transaction([

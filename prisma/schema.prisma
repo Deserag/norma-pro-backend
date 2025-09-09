@@ -79,7 +79,7 @@ model Company {
 }
 
 model Role {
-  id        Int      @id @default(autoincrement())
+  id           String       @id @default(uuid())
   name      String   @unique
   description String? 
   createdAt DateTime @default(now()) @map("created_at")
@@ -95,7 +95,7 @@ model Membership {
   id        String   @id @default(uuid())
   userId    String   @map("user_id")
   companyId String   @map("company_id")
-  roleId    Int      @map("role_id")
+  roleId String @map("role_id")
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
   deletedAt DateTime? @map("deleted_at")
@@ -129,7 +129,7 @@ model Project {
 }
 
 model DocumentType {
-  id   Int    @id @default(autoincrement())
+  id String @id @default(uuid())
   name String @unique
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -143,7 +143,7 @@ model DocumentType {
 }
 
 model DocumentStatus {
-  id   Int    @id @default(autoincrement())
+  id String @id @default(uuid())
   name String @unique
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -160,8 +160,8 @@ model Document {
   id              String           @id @default(uuid())
   code            String
   title           String
-  typeId          Int              @map("type_id")
-  statusId        Int              @map("status_id")
+  typeId          String           @map("type_id")
+  statusId        String           @map("status_id")
   description     String?
   currentVersionId String?         @map("current_version_id") @unique
   replacedById    String?          @map("replaced_by_id")
@@ -215,7 +215,7 @@ model DocumentVersion {
 }
 
 model TagCategory {
-  id        Int           @id @default(autoincrement())
+  id String @id @default(uuid())
   name      String        @unique
   createdAt DateTime      @default(now()) @map("created_at")
   updatedAt DateTime      @updatedAt @map("updated_at")
@@ -229,7 +229,7 @@ model TagCategory {
 }
 
 model Tag {
-  id        Int           @id @default(autoincrement())
+  id String @id @default(uuid())
   name      String
   tagType   String?       @map("tag_type")
   createdAt DateTime      @default(now()) @map("created_at")
@@ -245,8 +245,8 @@ model Tag {
 }
 
 model TagCategoryTag {
-  tagId       Int
-  categoryId  Int
+  tagId       String
+  categoryId  String
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
   deletedAt   DateTime? @map("deleted_at")
@@ -262,7 +262,7 @@ model TagCategoryTag {
 
 model DocumentTag {
   documentId String @map("document_id")
-  tagId      Int    @map("tag_id")
+  tagId      String @map("tag_id")
   createdAt  DateTime @default(now()) @map("created_at")
   updatedAt  DateTime @updatedAt @map("updated_at")
   deletedAt  DateTime? @map("deleted_at")
@@ -315,7 +315,7 @@ model CompanyDocument {
 }
 
 model OrderStatus {
-  id   Int    @id @default(autoincrement())
+  id String @id @default(uuid())
   name String @unique
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -331,7 +331,7 @@ model OrderStatus {
 model Order {
   id        String   @id @default(uuid())
   companyId String   @map("company_id")
-  statusId  Int      @map("status_id")
+  statusId  String   @map("status_id")
   amount    Float
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -347,7 +347,7 @@ model Order {
 }
 
 model PackageStatus {
-  id   Int    @id @default(autoincrement())
+  id String @id @default(uuid())
   name String @unique
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -363,7 +363,7 @@ model PackageStatus {
 model Package {
   id        String   @id @default(uuid())
   orderId   String   @map("order_id")
-  statusId  Int      @map("status_id")
+  statusId  String   @map("status_id")
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
   deletedAt DateTime? @map("deleted_at")
@@ -396,7 +396,7 @@ model PackageItem {
 }
 
 model SubscriptionPlan {
-  id   Int    @id @default(autoincrement())
+  id String @id @default(uuid())
   name String @unique
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -410,7 +410,7 @@ model SubscriptionPlan {
 }
 
 model SubscriptionStatus {
-  id   Int    @id @default(autoincrement())
+  id String @id @default(uuid())
   name String @unique
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -426,8 +426,8 @@ model SubscriptionStatus {
 model Subscription {
   id        String   @id @default(uuid())
   companyId String   @map("company_id")
-  planId    Int      @map("plan_id")
-  statusId  Int      @map("status_id")
+  planId    String   @map("plan_id")
+  statusId  String   @map("status_id")
   startDate DateTime @map("start_date")
   endDate   DateTime @map("end_date")
   createdAt DateTime @default(now()) @map("created_at")
@@ -444,7 +444,7 @@ model Subscription {
 }
 
 model NotificationType {
-  id   Int    @id @default(autoincrement())
+  id String @id @default(uuid())
   name String @unique
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -460,7 +460,7 @@ model NotificationType {
 model Notification {
   id        String   @id @default(uuid())
   userId    String   @map("user_id")
-  typeId    Int      @map("type_id")
+  typeId    String   @map("type_id")
   message   String
   isRead    Boolean  @default(false) @map("is_read")
   createdAt DateTime @default(now()) @map("created_at")
