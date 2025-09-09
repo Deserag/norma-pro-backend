@@ -15,5 +15,5 @@ export class CreateTagDTO {
   @IsArray()
   @IsNumber({}, { each: true })
   @ApiPropertyOptional({ example: [1, 2] })
-  categoryIds?: number[];
+  categoryIds?: string[];
 }

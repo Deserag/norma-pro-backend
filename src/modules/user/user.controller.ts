@@ -38,7 +38,7 @@ export class UserController {
   @ApiResponse({ status: 403, description: 'Доступ запрещен' })
   @ApiResponse({ status: 404, description: 'Роль не найдена' })
   async getRoleById(@Param('id') id: string, @Req() req) {
-    return await this.userService.getRoleById(parseInt(id), req.user.sub);
+    return await this.userService.getRoleById(id, req.user.sub);
   }
 
   @Post('docs/:id')
@@ -135,7 +135,7 @@ export class UserController {
     @Req() req,
   ) {
     return await this.userService.updateRole(
-      parseInt(id),
+      id,
       updateRoleDto,
       req.user.sub,
     );
@@ -148,7 +148,7 @@ export class UserController {
   @ApiResponse({ status: 404, description: 'Роль не найдена' })
   @HttpCode(HttpStatus.OK)
   async deleteRole(@Param('id') id: string, @Req() req) {
-    return await this.userService.deleteRole(parseInt(id), req.user.sub);
+    return await this.userService.deleteRole(id, req.user.sub);
   }
 
   @Delete(':id')

@@ -110,7 +110,7 @@ export class UserService {
     }
   }
 
-  async getRoleById(id: number, currentUserId: string) {
+  async getRoleById(id: string, currentUserId: string) {
     try {
       const isAdmin = await this.isSuperAdmin(currentUserId);
       if (!isAdmin) {
@@ -265,7 +265,7 @@ export class UserService {
                 memberships: {
                   create: {
                     companyId: createUserDto.companyId,
-                    roleId: Number(createUserDto.roleId),
+                    roleId: createUserDto.roleId,
                     createdById: currentUserId,
                   },
                 },
@@ -340,7 +340,7 @@ export class UserService {
     }
   }
 
-  async updateRole(id: number, updateRoleDto: CreateRoleDTO, currentUserId: string) {
+  async updateRole(id: string, updateRoleDto: CreateRoleDTO, currentUserId: string) {
     try {
       const isAdmin = await this.isSuperAdmin(currentUserId);
       if (!isAdmin) {
@@ -409,7 +409,7 @@ export class UserService {
     }
   }
 
-  async deleteRole(id: number, currentUserId: string) {
+  async deleteRole(id: string, currentUserId: string) {
     try {
       const isAdmin = await this.isSuperAdmin(currentUserId);
       if (!isAdmin) {

@@ -19,11 +19,11 @@ export class CreateFileDTO {
 
   @IsNumber()
   @ApiProperty({ example: 1, required: true })
-  typeId: number;
+  typeId: string;
 
   @IsNumber()
   @ApiProperty({ example: 1, required: true })
-  statusId: number;
+  statusId: string;
 
   @IsOptional()
   @IsString()
@@ -49,13 +49,13 @@ export class CreateFileDTO {
   @IsArray()
   @IsNumber({}, { each: true })
   @ApiPropertyOptional({ example: [1, 2] })
-  tagIds?: number[];
+  tagIds?: string[];
 
   @IsOptional()
   @IsArray()
   @IsNumber({}, { each: true })
   @ApiPropertyOptional({ example: [1, 2] })
-  categoryIds?: number[];
+  categoryIds?: string[];
 }
 
 export class UpdateFileDTO extends CreateFileDTO {

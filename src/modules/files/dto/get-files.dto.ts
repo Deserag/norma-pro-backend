@@ -17,13 +17,13 @@ export class GetFilesDTO {
   @IsArray()
   @IsNumber({}, { each: true })
   @ApiPropertyOptional({ example: [1, 2] })
-  tagIds?: number[];
+  tagIds?: string[];
 
   @IsOptional()
   @IsArray()
   @IsNumber({}, { each: true })
   @ApiPropertyOptional({ example: [1, 2] })
-  categoryIds?: number[];
+  categoryIds?: string[];
 
   @IsOptional()
   @IsString()
@@ -33,12 +33,12 @@ export class GetFilesDTO {
   @IsOptional()
   @IsNumber()
   @ApiPropertyOptional({ example: 1 })
-  typeId?: number;
+  typeId?: string;
 
   @IsOptional()
   @IsNumber()
   @ApiPropertyOptional({ example: 1 })
-  statusId?: number;
+  statusId?: string;
 
   @IsOptional()
   @IsEnum(DocumentKind)
