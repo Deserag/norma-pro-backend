@@ -88,8 +88,8 @@ export class UserController {
     description: 'Роль с таким именем уже существует',
   })
   @HttpCode(HttpStatus.CREATED)
-  async createRole(@Body() createRoleDto: CreateRoleDTO, @Req() req) {
-    return await this.userService.createRole(createRoleDto, req.user.sub);
+  async createRole(@Body() createRoleDto: CreateRoleDTO) {
+    return await this.userService.createRole(createRoleDto);
   }
 
   @Post('roles/list')

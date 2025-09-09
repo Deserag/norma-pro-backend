@@ -209,12 +209,12 @@ export class UserService {
     }
   }
 
-  async createRole(createRole: CreateRoleDTO, currentUserId: string) {
+  async createRole(createRole: CreateRoleDTO) {
     try {
-      const isAdmin = await this.isSuperAdmin(currentUserId);
-      if (!isAdmin) {
-        throw new ForbiddenException('Только SuperAdmin может создавать роли');
-      }
+      // const isAdmin = await this.isSuperAdmin(currentUserId);
+      // if (!isAdmin) {
+      //   throw new ForbiddenException('Только SuperAdmin может создавать роли');
+      // }
 
       const existingRole = await this._prisma.role.findUnique({
         where: { name: createRole.name, deletedAt: null },
@@ -226,7 +226,8 @@ export class UserService {
       return await this._prisma.role.create({
         data: {
           name: createRole.name,
-          createdById: currentUserId,
+          description: createRole.description,
+          // createdById: currentUserId,
         },
       });
     } catch (error) {
