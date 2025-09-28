@@ -25,15 +25,13 @@ model User {
   createdAt    DateTime     @default(now()) @map("created_at")
   updatedAt    DateTime     @updatedAt @map("updated_at")
   deletedAt    DateTime?    @map("deleted_at")
-  createdById  String?      @map("created_by_id")
+  createdById  String?      @map("created_by_id") // Опционально, для self-created
 
   memberships          Membership[]       @relation("UserMemberships")
   createdMemberships   Membership[]       @relation("MembershipCreator")
   notifications        Notification[]     @relation("NotificationUser")
   createdNotifications Notification[]     @relation("NotificationCreator")
-  projects             Project[]          @relation("ProjectCreatedBy")
-  createdProjects      Project[]          @relation("ProjectCreator")
-  creator              User?              @relation("UserCreator", fields: [createdById], references: [id])
+  projects             Project[]          @relation("ProjectCreatedBy") // Убрал дубликат relation
   createdUsers         User[]             @relation("UserCreator")
   createdCompanies     Company[]          @relation("CompanyCreator")
   createdDocumentTypes DocumentType[]     @relation("DocumentTypeCreator")
@@ -55,36 +53,46 @@ model User {
   createdNotificationTypes NotificationType[] @relation("NotificationTypeCreator")
   createdTagCategories TagCategory[]      @relation("TagCategoryCreator")
   createdTagCategoryTags TagCategoryTag[] @relation("TagCategoryTagCreator")
+  createdChats         Chat[]             @relation("ChatCreator")
+  messages             Message[]          @relation("MessageSender")
+  chatParticipants     ChatParticipant[]  @relation("ChatParticipantUser")
+  responsibleCompanies Company[]          @relation("CompanyResponsible")
+  creator              User?              @relation("UserCreator", fields: [createdById], references: [id])
 
   @@map("users")
+  @@index([email]) // Для быстрых поисков
 }
 
 model Company {
-  id        String       @id @default(uuid())
-  name      String
-  inn       String?
-  createdAt DateTime     @default(now()) @map("created_at")
-  updatedAt DateTime     @updatedAt @map("updated_at")
-  deletedAt DateTime?    @map("deleted_at")
-  createdById String?    @map("created_by_id")
+  id                String       @id @default(uuid())
+  name              String       @unique // Добавил unique для избежания дубликатов
+  inn               String?      @unique // Если ИНН уникален
+  responsibleUserId String?      @map("responsible_user_id") // Новый: ответственный от "вашей" компании
+  createdAt         DateTime     @default(now()) @map("created_at")
+  updatedAt         DateTime     @updatedAt @map("updated_at")
+  deletedAt         DateTime?    @map("deleted_at")
+  createdById       String?      @map("created_by_id")
 
-  memberships Membership[]
-  projects    Project[]
-  orders      Order[]
+  memberships   Membership[]
+  projects      Project[]
+  orders        Order[]
   subscriptions Subscription[]
-  companyDocs CompanyDocument[]
-  creator     User?       @relation("CompanyCreator", fields: [createdById], references: [id])
+  companyDocs   CompanyDocument[]
+  creator       User?       @relation("CompanyCreator", fields: [createdById], references: [id])
+  responsible   User?       @relation("CompanyResponsible", fields: [responsibleUserId], references: [id])
+  chats         Chat[]      @relation("CompanyChats")
 
   @@map("companies")
+  @@index([name, inn])
 }
 
 model Role {
-  id           String       @id @default(uuid())
-  name      String   @unique
+  id          String    @id @default(uuid())
+  name        String    @unique
   description String? 
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
-  deletedAt DateTime? @map("deleted_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  deletedAt   DateTime? @map("deleted_at")
 
   memberships Membership[]
 
@@ -94,19 +102,21 @@ model Role {
 model Membership {
   id        String   @id @default(uuid())
   userId    String   @map("user_id")
-  companyId String   @map("company_id")
-  roleId String @map("role_id")
+  companyId String?   @map("company_id")
+  roleId    String   @map("role_id")
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
   deletedAt DateTime? @map("deleted_at")
   createdById String? @map("created_by_id")
 
   user    User    @relation("UserMemberships", fields: [userId], references: [id])
-  company Company @relation(fields: [companyId], references: [id])
+  company Company? @relation(fields: [companyId], references: [id])
   role    Role    @relation(fields: [roleId], references: [id])
   creator User?   @relation("MembershipCreator", fields: [createdById], references: [id])
 
+  @@unique([userId, companyId]) // Новый: уникальное членство
   @@map("memberships")
+  @@index([userId, companyId])
 }
 
 model Project {
@@ -114,64 +124,63 @@ model Project {
   companyId   String   @map("company_id")
   name        String
   description String?
-  createdBy   String   @map("created_by")
+  createdBy   String   @map("created_by") // Используем только это для creator
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
   deletedAt   DateTime? @map("deleted_at")
-  createdById String? @map("created_by_id")
 
-  company Company @relation(fields: [companyId], references: [id])
-  creator User   @relation("ProjectCreatedBy", fields: [createdBy], references: [id])
-  projectCreator User? @relation("ProjectCreator", fields: [createdById], references: [id])
-  projectDocs ProjectDocument[]
+  company       Company         @relation(fields: [companyId], references: [id])
+  creator       User            @relation("ProjectCreatedBy", fields: [createdBy], references: [id]) // Убрал ? и дубликат
+  projectDocs   ProjectDocument[]
 
   @@map("projects")
+  @@index([companyId])
 }
 
 model DocumentType {
-  id String @id @default(uuid())
-  name String @unique
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
-  deletedAt DateTime? @map("deleted_at")
-  createdById String? @map("created_by_id")
+  id          String    @id @default(uuid())
+  name        String    @unique
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  deletedAt   DateTime? @map("deleted_at")
+  createdById String    @map("created_by_id") // Сделал required
 
   documents Document[]
-  creator   User?     @relation("DocumentTypeCreator", fields: [createdById], references: [id])
+  creator   User      @relation("DocumentTypeCreator", fields: [createdById], references: [id])
 
   @@map("document_types")
 }
 
 model DocumentStatus {
-  id String @id @default(uuid())
-  name String @unique
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
-  deletedAt DateTime? @map("deleted_at")
-  createdById String? @map("created_by_id")
+  id          String    @id @default(uuid())
+  name        String    @unique
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  deletedAt   DateTime? @map("deleted_at")
+  createdById String    @map("created_by_id")
 
   documents Document[]
-  creator   User?     @relation("DocumentStatusCreator", fields: [createdById], references: [id])
+  creator   User      @relation("DocumentStatusCreator", fields: [createdById], references: [id])
 
   @@map("document_statuses")
 }
 
 model Document {
-  id              String           @id @default(uuid())
-  code            String
-  title           String
-  typeId          String           @map("type_id")
-  statusId        String           @map("status_id")
-  description     String?
-  currentVersionId String?         @map("current_version_id") @unique
-  replacedById    String?          @map("replaced_by_id")
-  createdAt       DateTime         @default(now()) @map("created_at")
-  updatedAt       DateTime         @updatedAt @map("updated_at")
-  deletedAt       DateTime?        @map("deleted_at")
-  createdById     String?          @map("created_by_id")
-  originalDocumentId String?       @map("original_document_id")
-  documentKind    DocumentKind     @default(ORIGINAL)
-  language        String?          @map("language")
+  id                 String           @id @default(uuid())
+  code               String           @unique // Добавил unique для кодов стандартов
+  title              String
+  typeId             String           @map("type_id")
+  statusId           String           @map("status_id")
+  description        String?
+  currentVersionId   String?          @map("current_version_id") @unique
+  replacedById       String?          @map("replaced_by_id")
+  createdAt          DateTime         @default(now()) @map("created_at")
+  updatedAt          DateTime         @updatedAt @map("updated_at")
+  deletedAt          DateTime?        @map("deleted_at")
+  createdById        String           @map("created_by_id")
+  originalDocumentId String?          @map("original_document_id")
+  documentKind       DocumentKind     @default(ORIGINAL)
+  language           String?          @map("language")
 
   type            DocumentType     @relation(fields: [typeId], references: [id])
   status          DocumentStatus   @relation(fields: [statusId], references: [id])
@@ -183,11 +192,12 @@ model Document {
   replacedBy      Document?        @relation("ReplacedBy", fields: [replacedById], references: [id])
   replaces        Document[]       @relation("ReplacedBy")
   packageItems    PackageItem[]    @relation("DocumentToPackageItem")
-  creator         User?            @relation("DocumentCreator", fields: [createdById], references: [id])
+  creator         User             @relation("DocumentCreator", fields: [createdById], references: [id])
   originalDocument Document?       @relation("OriginalDocument", fields: [originalDocumentId], references: [id])
   derivedDocuments Document[]      @relation("OriginalDocument")
 
   @@map("documents")
+  @@index([code, title])
 }
 
 model DocumentVersion {
@@ -202,44 +212,45 @@ model DocumentVersion {
   createdAt       DateTime @default(now()) @map("created_at")
   updatedAt       DateTime @updatedAt @map("updated_at")
   deletedAt       DateTime? @map("deleted_at")
-  createdById     String?  @map("created_by_id")
+  createdById     String   @map("created_by_id")
 
   document        Document @relation(fields: [documentId], references: [id])
   pinnedIn        ProjectDocument[] @relation("PinnedVersion")
   companyPinnedIn CompanyDocument[] @relation("CompanyPinnedVersion")
   currentFor      Document? @relation("CurrentVersion")
   packageItems    PackageItem[] @relation("VersionToPackageItem")
-  creator         User?    @relation("DocumentVersionCreator", fields: [createdById], references: [id])
+  creator         User     @relation("DocumentVersionCreator", fields: [createdById], references: [id])
 
   @@map("document_versions")
+  @@index([documentId])
 }
 
 model TagCategory {
-  id String @id @default(uuid())
-  name      String        @unique
-  createdAt DateTime      @default(now()) @map("created_at")
-  updatedAt DateTime      @updatedAt @map("updated_at")
-  deletedAt DateTime?     @map("deleted_at")
-  createdById String?     @map("created_by_id")
+  id          String    @id @default(uuid())
+  name        String    @unique
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  deletedAt   DateTime? @map("deleted_at")
+  createdById String    @map("created_by_id")
 
   tags      TagCategoryTag[]
-  creator   User?          @relation("TagCategoryCreator", fields: [createdById], references: [id])
+  creator   User      @relation("TagCategoryCreator", fields: [createdById], references: [id])
 
   @@map("tag_categories")
 }
 
 model Tag {
-  id String @id @default(uuid())
-  name      String
-  tagType   String?       @map("tag_type")
-  createdAt DateTime      @default(now()) @map("created_at")
-  updatedAt DateTime      @updatedAt @map("updated_at")
-  deletedAt DateTime?     @map("deleted_at")
-  createdById String?     @map("created_by_id")
+  id          String    @id @default(uuid())
+  name        String    @unique // Добавил unique
+  tagType     String?   @map("tag_type")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  deletedAt   DateTime? @map("deleted_at")
+  createdById String    @map("created_by_id")
 
   documentTags DocumentTag[]
   categories   TagCategoryTag[]
-  creator      User?       @relation("TagCreator", fields: [createdById], references: [id])
+  creator      User      @relation("TagCreator", fields: [createdById], references: [id])
 
   @@map("tags")
 }
@@ -247,30 +258,30 @@ model Tag {
 model TagCategoryTag {
   tagId       String
   categoryId  String
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
   deletedAt   DateTime? @map("deleted_at")
-  createdById String? @map("created_by_id")
+  createdById String    @map("created_by_id")
 
   tag       Tag         @relation(fields: [tagId], references: [id])
   category  TagCategory @relation(fields: [categoryId], references: [id])
-  creator   User?       @relation("TagCategoryTagCreator", fields: [createdById], references: [id])
+  creator   User        @relation("TagCategoryTagCreator", fields: [createdById], references: [id])
 
   @@id([tagId, categoryId])
   @@map("tag_category_tags")
 }
 
 model DocumentTag {
-  documentId String @map("document_id")
-  tagId      String @map("tag_id")
-  createdAt  DateTime @default(now()) @map("created_at")
-  updatedAt  DateTime @updatedAt @map("updated_at")
-  deletedAt  DateTime? @map("deleted_at")
-  createdById String? @map("created_by_id")
+  documentId  String    @map("document_id")
+  tagId       String    @map("tag_id")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  deletedAt   DateTime? @map("deleted_at")
+  createdById String    @map("created_by_id")
 
   document Document @relation(fields: [documentId], references: [id])
   tag      Tag      @relation(fields: [tagId], references: [id])
-  creator  User?    @relation("DocumentTagCreator", fields: [createdById], references: [id])
+  creator  User     @relation("DocumentTagCreator", fields: [createdById], references: [id])
 
   @@id([documentId, tagId])
   @@map("document_tags")
@@ -285,14 +296,15 @@ model ProjectDocument {
   createdAt       DateTime @default(now()) @map("created_at")
   updatedAt       DateTime @updatedAt @map("updated_at")
   deletedAt       DateTime? @map("deleted_at")
-  createdById     String?  @map("created_by_id")
+  createdById     String   @map("created_by_id")
 
   project       Project         @relation(fields: [projectId], references: [id])
   document      Document        @relation(fields: [documentId], references: [id])
   pinnedVersion DocumentVersion? @relation("PinnedVersion", fields: [pinnedVersionId], references: [id])
-  creator       User?           @relation("ProjectDocumentCreator", fields: [createdById], references: [id])
+  creator       User            @relation("ProjectDocumentCreator", fields: [createdById], references: [id])
 
   @@map("project_documents")
+  @@index([projectId, documentId])
 }
 
 model CompanyDocument {
@@ -304,173 +316,242 @@ model CompanyDocument {
   createdAt       DateTime @default(now()) @map("created_at")
   updatedAt       DateTime @updatedAt @map("updated_at")
   deletedAt       DateTime? @map("deleted_at")
-  createdById     String?  @map("created_by_id")
+  createdById     String   @map("created_by_id")
 
   company       Company         @relation(fields: [companyId], references: [id])
   document      Document        @relation(fields: [documentId], references: [id])
   pinnedVersion DocumentVersion? @relation("CompanyPinnedVersion", fields: [pinnedVersionId], references: [id])
-  creator       User?           @relation("CompanyDocumentCreator", fields: [createdById], references: [id])
+  creator       User            @relation("CompanyDocumentCreator", fields: [createdById], references: [id])
 
   @@map("company_documents")
+  @@index([companyId, documentId])
 }
 
 model OrderStatus {
-  id String @id @default(uuid())
-  name String @unique
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
-  deletedAt DateTime? @map("deleted_at")
-  createdById String? @map("created_by_id")
+  id          String    @id @default(uuid())
+  name        String    @unique
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  deletedAt   DateTime? @map("deleted_at")
+  createdById String    @map("created_by_id")
 
   orders Order[]
-  creator User?  @relation("OrderStatusCreator", fields: [createdById], references: [id])
+  creator User     @relation("OrderStatusCreator", fields: [createdById], references: [id])
 
   @@map("order_statuses")
 }
 
 model Order {
-  id        String   @id @default(uuid())
-  companyId String   @map("company_id")
-  statusId  String   @map("status_id")
-  amount    Float
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
-  deletedAt DateTime? @map("deleted_at")
-  createdById String? @map("created_by_id")
+  id          String    @id @default(uuid())
+  companyId   String    @map("company_id")
+  statusId    String    @map("status_id")
+  amount      Float
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  deletedAt   DateTime? @map("deleted_at")
+  createdById String    @map("created_by_id")
 
   company Company     @relation(fields: [companyId], references: [id])
   status  OrderStatus @relation(fields: [statusId], references: [id])
   packages Package[]
-  creator User?       @relation("OrderCreator", fields: [createdById], references: [id])
+  creator User        @relation("OrderCreator", fields: [createdById], references: [id])
 
   @@map("orders")
+  @@index([companyId])
 }
 
 model PackageStatus {
-  id String @id @default(uuid())
-  name String @unique
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
-  deletedAt DateTime? @map("deleted_at")
-  createdById String? @map("created_by_id")
+  id          String    @id @default(uuid())
+  name        String    @unique
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  deletedAt   DateTime? @map("deleted_at")
+  createdById String    @map("created_by_id")
 
   packages Package[]
-  creator  User?   @relation("PackageStatusCreator", fields: [createdById], references: [id])
+  creator  User     @relation("PackageStatusCreator", fields: [createdById], references: [id])
 
   @@map("package_statuses")
 }
 
 model Package {
-  id        String   @id @default(uuid())
-  orderId   String   @map("order_id")
-  statusId  String   @map("status_id")
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
-  deletedAt DateTime? @map("deleted_at")
-  createdById String? @map("created_by_id")
+  id          String    @id @default(uuid())
+  orderId     String    @map("order_id")
+  statusId    String    @map("status_id")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  deletedAt   DateTime? @map("deleted_at")
+  createdById String    @map("created_by_id")
 
   order   Order         @relation(fields: [orderId], references: [id])
   status  PackageStatus @relation(fields: [statusId], references: [id])
   items   PackageItem[]
-  creator User?         @relation("PackageCreator", fields: [createdById], references: [id])
+  creator User          @relation("PackageCreator", fields: [createdById], references: [id])
 
   @@map("packages")
+  @@index([orderId])
 }
 
 model PackageItem {
-  id         String   @id @default(uuid())
-  packageId  String   @map("package_id")
-  documentId String   @map("document_id")
-  versionId  String   @map("version_id")
-  createdAt  DateTime @default(now()) @map("created_at")
-  updatedAt  DateTime @updatedAt @map("updated_at")
-  deletedAt  DateTime? @map("deleted_at")
-  createdById String? @map("created_by_id")
+  id          String    @id @default(uuid())
+  packageId   String    @map("package_id")
+  documentId  String    @map("document_id")
+  versionId   String    @map("version_id")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  deletedAt   DateTime? @map("deleted_at")
+  createdById String    @map("created_by_id")
 
   package    Package  @relation(fields: [packageId], references: [id])
   document   Document @relation("DocumentToPackageItem", fields: [documentId], references: [id])
   version    DocumentVersion @relation("VersionToPackageItem", fields: [versionId], references: [id])
-  creator    User?    @relation("PackageItemCreator", fields: [createdById], references: [id])
+  creator    User     @relation("PackageItemCreator", fields: [createdById], references: [id])
 
   @@map("package_items")
+  @@index([packageId])
 }
 
 model SubscriptionPlan {
-  id String @id @default(uuid())
-  name String @unique
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
-  deletedAt DateTime? @map("deleted_at")
-  createdById String? @map("created_by_id")
+  id             String    @id @default(uuid())
+  name           String    @unique
+  price          Float?    // Новый: цена плана
+  durationMonths Int?      // Новый: длительность
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
+  deletedAt      DateTime? @map("deleted_at")
+  createdById    String    @map("created_by_id")
 
   subscriptions Subscription[]
-  creator       User?         @relation("SubscriptionPlanCreator", fields: [createdById], references: [id])
+  creator       User          @relation("SubscriptionPlanCreator", fields: [createdById], references: [id])
 
   @@map("subscription_plans")
 }
 
 model SubscriptionStatus {
-  id String @id @default(uuid())
-  name String @unique
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
-  deletedAt DateTime? @map("deleted_at")
-  createdById String? @map("created_by_id")
+  id          String    @id @default(uuid())
+  name        String    @unique
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  deletedAt   DateTime? @map("deleted_at")
+  createdById String    @map("created_by_id")
 
   subscriptions Subscription[]
-  creator       User?         @relation("SubscriptionStatusCreator", fields: [createdById], references: [id])
+  creator       User          @relation("SubscriptionStatusCreator", fields: [createdById], references: [id])
 
   @@map("subscription_statuses")
 }
 
 model Subscription {
-  id        String   @id @default(uuid())
-  companyId String   @map("company_id")
-  planId    String   @map("plan_id")
-  statusId  String   @map("status_id")
-  startDate DateTime @map("start_date")
-  endDate   DateTime @map("end_date")
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
-  deletedAt DateTime? @map("deleted_at")
-  createdById String? @map("created_by_id")
+  id          String    @id @default(uuid())
+  companyId   String    @map("company_id")
+  planId      String    @map("plan_id")
+  statusId    String    @map("status_id")
+  startDate   DateTime  @map("start_date")
+  endDate     DateTime  @map("end_date")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  deletedAt   DateTime? @map("deleted_at")
+  createdById String    @map("created_by_id")
 
   company Company           @relation(fields: [companyId], references: [id])
   plan    SubscriptionPlan  @relation(fields: [planId], references: [id])
   status  SubscriptionStatus @relation(fields: [statusId], references: [id])
-  creator User?             @relation("SubscriptionCreator", fields: [createdById], references: [id])
+  creator User              @relation("SubscriptionCreator", fields: [createdById], references: [id])
 
   @@map("subscriptions")
+  @@index([companyId])
 }
 
 model NotificationType {
-  id String @id @default(uuid())
-  name String @unique
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
-  deletedAt DateTime? @map("deleted_at")
-  createdById String? @map("created_by_id")
+  id          String    @id @default(uuid())
+  name        String    @unique
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  deletedAt   DateTime? @map("deleted_at")
+  createdById String    @map("created_by_id")
 
   notifications Notification[]
-  creator       User?         @relation("NotificationTypeCreator", fields: [createdById], references: [id])
+  creator       User          @relation("NotificationTypeCreator", fields: [createdById], references: [id])
 
   @@map("notification_types")
 }
 
 model Notification {
-  id        String   @id @default(uuid())
-  userId    String   @map("user_id")
-  typeId    String   @map("type_id")
-  message   String
-  isRead    Boolean  @default(false) @map("is_read")
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
-  deletedAt DateTime? @map("deleted_at")
-  createdById String? @map("created_by_id")
+  id          String    @id @default(uuid())
+  userId      String    @map("user_id")
+  typeId      String    @map("type_id")
+  message     String
+  entityId    String?   @map("entity_id") // Новый: ссылка на сущность (documentId и т.п.)
+  entityType  String?   @map("entity_type") // Новый: тип сущности (Document, Order и т.п.)
+  isRead      Boolean   @default(false) @map("is_read")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  deletedAt   DateTime? @map("deleted_at")
+  createdById String?   @map("created_by_id")
 
-  user User @relation("NotificationUser", fields: [userId], references: [id])
-  type NotificationType @relation(fields: [typeId], references: [id])
-  creator User? @relation("NotificationCreator", fields: [createdById], references: [id])
+  user    User             @relation("NotificationUser", fields: [userId], references: [id])
+  type    NotificationType @relation(fields: [typeId], references: [id])
+  creator User?            @relation("NotificationCreator", fields: [createdById], references: [id])
 
   @@map("notifications")
+  @@index([userId])
+}
+
+// Новые модели для диалогов
+
+enum ChatType {
+  PRIVATE // 1:1
+  GROUP   // Групповой, например, по проекту
+  COMPANY // По компании
+}
+
+model Chat {
+  id          String    @id @default(uuid())
+  title       String?   // Для групповых
+  type        ChatType  @default(PRIVATE)
+  companyId   String?   @map("company_id") // Опционально, если чат по компании
+  projectId   String?   @map("project_id") // Опционально, если по проекту
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  deletedAt   DateTime? @map("deleted_at")
+  createdById String    @map("created_by_id")
+
+  company     Company?        @relation("CompanyChats", fields: [companyId], references: [id])
+  creator     User            @relation("ChatCreator", fields: [createdById], references: [id])
+  participants ChatParticipant[]
+  messages    Message[]
+
+  @@map("chats")
+  @@index([companyId, projectId])
+}
+
+model ChatParticipant {
+  id        String   @id @default(uuid())
+  chatId    String   @map("chat_id")
+  userId    String   @map("user_id")
+  joinedAt  DateTime @default(now()) @map("joined_at")
+  leftAt    DateTime? @map("left_at")
+
+  chat Chat @relation(fields: [chatId], references: [id])
+  user User @relation("ChatParticipantUser", fields: [userId], references: [id])
+
+  @@unique([chatId, userId])
+  @@map("chat_participants")
+}
+
+model Message {
+  id          String    @id @default(uuid())
+  chatId      String    @map("chat_id")
+  senderId    String    @map("sender_id")
+  content     String
+  isRead      Boolean   @default(false) @map("is_read") // Для приватных
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  deletedAt   DateTime? @map("deleted_at")
+
+  chat   Chat @relation(fields: [chatId], references: [id])
+  sender User @relation("MessageSender", fields: [senderId], references: [id])
+
+  @@map("messages")
+  @@index([chatId, createdAt]) // Для сортировки сообщений
 }

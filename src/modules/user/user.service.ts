@@ -4,6 +4,14 @@ import { PrismaService } from '../prisma';
 import { CreateUserDto, UpdateUserDTO, GetListDTO, CreateRoleDTO } from './dto';
 import { Prisma } from '@prisma/client';
 
+
+// {
+//   "email": "superadmin@example.com",
+//   "password": "SuperPass123",
+//   "fullName": "Super Admin",
+//   "companyId": null,
+//   "roleId": "1"
+// }
 @Injectable()
 export class UserService {
   constructor(private _prisma: PrismaService) {}
@@ -13,22 +21,45 @@ export class UserService {
       where: { userId, deletedAt: null },
       include: { role: true },
     });
-    return membership?.role.name === 'SuperAdmin';
+    return membership?.role?.name ? ['SuperAdmin', 'Admin', 'WorkerSystem'].includes(membership.role.name) : false;
+  }
+
+  private async isAdminOrSuper(userId: string): Promise<boolean> {
+    const membership = await this._prisma.membership.findFirst({
+      where: { userId, deletedAt: null },
+      include: { role: true },
+    });
+    return membership?.role?.name ? ['SuperAdmin', 'Admin'].includes(membership.role.name) : false;
   }
 
   async getUsersList(getUser: GetListDTO, currentUserId: string) {
     try {
       const isAdmin = await this.isSuperAdmin(currentUserId);
       if (!isAdmin) {
-        throw new ForbiddenException('Только SuperAdmin может просматривать список пользователей');
+        throw new ForbiddenException('Только SuperAdmin, Admin или WorkerSystem может просматривать список пользователей');
       }
 
-      const { page = 1, size = 10 } = getUser;
+      const { page = 1, size = 10, deleted = false, name, clientId } = getUser;
+      const whereClause: Prisma.UserWhereInput = deleted ? { deletedAt: { not: null } } : { deletedAt: null };
+
+      if (name) {
+        whereClause.fullName = { contains: name, mode: 'insensitive' };
+      }
+
+      if (clientId) {
+        whereClause.memberships = {
+          some: {
+            companyId: clientId,
+            deletedAt: null,
+          },
+        };
+      }
+
       const [rows, totalCount] = await this._prisma.$transaction([
         this._prisma.user.findMany({
           skip: (page - 1) * size,
           take: size,
-          where: { deletedAt: null },
+          where: whereClause,
           orderBy: { createdAt: 'desc' },
           include: {
             memberships: {
@@ -39,7 +70,7 @@ export class UserService {
             },
           },
         }),
-        this._prisma.user.count({ where: { deletedAt: null } }),
+        this._prisma.user.count({ where: whereClause }),
       ]);
       return {
         rows,
@@ -114,7 +145,7 @@ export class UserService {
     try {
       const isAdmin = await this.isSuperAdmin(currentUserId);
       if (!isAdmin) {
-        throw new ForbiddenException('Только SuperAdmin может просматривать роли');
+        throw new ForbiddenException('Только SuperAdmin, Admin или WorkerSystem может просматривать роли');
       }
 
       const role = await this._prisma.role.findUnique({
@@ -134,20 +165,22 @@ export class UserService {
 
   async getRolesList(getRole: GetListDTO, currentUserId: string) {
     try {
-      // const isAdmin = await this.isSuperAdmin(currentUserId);
-      // if (!isAdmin) {
-      //   throw new ForbiddenException('Только SuperAdmin может просматривать список ролей');
-      // }
+      const isAdmin = await this.isSuperAdmin(currentUserId);
+      if (!isAdmin) {
+        throw new ForbiddenException('Только SuperAdmin, Admin или WorkerSystem может просматривать список ролей');
+      }
 
-      const { page = 1, size = 10 } = getRole;
+      const { page = 1, size = 10, deleted = false } = getRole;
+      const whereClause: Prisma.RoleWhereInput = deleted ? { deletedAt: { not: null } } : { deletedAt: null };
+
       const [rows, totalCount] = await this._prisma.$transaction([
         this._prisma.role.findMany({
           skip: (page - 1) * size,
           take: size,
-          where: { deletedAt: null },
+          where: whereClause,
           orderBy: { createdAt: 'desc' },
         }),
-        this._prisma.role.count({ where: { deletedAt: null } }),
+        this._prisma.role.count({ where: whereClause }),
       ]);
       return {
         rows,
@@ -170,10 +203,15 @@ export class UserService {
         throw new ForbiddenException('Доступ запрещен');
       }
 
-      const { page = 1, size = 10 } = getUserDocs;
+      const { page = 1, size = 10, deleted = false } = getUserDocs;
+      const whereClause: Prisma.DocumentWhereInput = {
+        createdById: userId,
+        ...(deleted ? { deletedAt: { not: null } } : { deletedAt: null }),
+      };
+
       const [rows, totalCount] = await this._prisma.$transaction([
         this._prisma.document.findMany({
-          where: { createdById: userId, deletedAt: null },
+          where: whereClause,
           skip: (page - 1) * size,
           take: size,
           orderBy: { createdAt: 'desc' },
@@ -193,7 +231,7 @@ export class UserService {
             status: { select: { id: true, name: true } },
           },
         }),
-        this._prisma.document.count({ where: { createdById: userId, deletedAt: null } }),
+        this._prisma.document.count({ where: whereClause }),
       ]);
       return {
         rows,
@@ -209,12 +247,12 @@ export class UserService {
     }
   }
 
-  async createRole(createRole: CreateRoleDTO) {
+  async createRole(createRole: CreateRoleDTO, currentUserId: string) {
     try {
-      // const isAdmin = await this.isSuperAdmin(currentUserId);
-      // if (!isAdmin) {
-      //   throw new ForbiddenException('Только SuperAdmin может создавать роли');
-      // }
+      const isAdmin = await this.isAdminOrSuper(currentUserId);
+      if (!isAdmin) {
+        throw new ForbiddenException('Только SuperAdmin или Admin может создавать роли');
+      }
 
       const existingRole = await this._prisma.role.findUnique({
         where: { name: createRole.name, deletedAt: null },
@@ -227,7 +265,6 @@ export class UserService {
         data: {
           name: createRole.name,
           description: createRole.description,
-          // createdById: currentUserId,
         },
       });
     } catch (error) {
@@ -240,16 +277,36 @@ export class UserService {
 
   async createUser(createUserDto: CreateUserDto, currentUserId: string) {
     try {
-      const isAdmin = await this.isSuperAdmin(currentUserId);
-      if (!isAdmin) {
-        throw new ForbiddenException('Только SuperAdmin может создавать пользователей');
-      }
+      // const isAdmin = await this.isAdminOrSuper(currentUserId);
+      // if (!isAdmin) {
+      //   throw new ForbiddenException('Только SuperAdmin или Admin может создавать пользователей');
+      // }
 
       const existingUser = await this._prisma.user.findUnique({
         where: { email: createUserDto.email, deletedAt: null },
       });
       if (existingUser) {
         throw new ConflictException('Пользователь с таким email уже существует');
+      }
+
+      if (createUserDto.companyId) {
+        const company = await this._prisma.company.findUnique({
+          where: { id: createUserDto.companyId, deletedAt: null },
+        });
+        if (!company) {
+          throw new NotFoundException('Компания не найдена');
+        }
+      }
+
+      if (!createUserDto.roleId) {
+        throw new NotFoundException('Роль обязательна для создания пользователя');
+      }
+
+      const role = await this._prisma.role.findUnique({
+        where: { id: createUserDto.roleId, deletedAt: null },
+      });
+      if (!role) {
+        throw new NotFoundException('Роль не найдена');
       }
 
       const hashedPassword = await bcrypt.hash(createUserDto.password, 10);
@@ -260,17 +317,13 @@ export class UserService {
           passwordHash: hashedPassword,
           fullName: createUserDto.fullName,
           createdById: currentUserId,
-          ...(createUserDto.companyId && createUserDto.roleId
-            ? {
-                memberships: {
-                  create: {
-                    companyId: createUserDto.companyId,
-                    roleId: createUserDto.roleId,
-                    createdById: currentUserId,
-                  },
-                },
-              }
-            : {}),
+          memberships: {
+            create: {
+              companyId: createUserDto.companyId ?? null,
+              roleId: createUserDto.roleId,
+              createdById: currentUserId,
+            },
+          },
         },
         select: {
           id: true,
@@ -342,9 +395,9 @@ export class UserService {
 
   async updateRole(id: string, updateRoleDto: CreateRoleDTO, currentUserId: string) {
     try {
-      const isAdmin = await this.isSuperAdmin(currentUserId);
+      const isAdmin = await this.isAdminOrSuper(currentUserId);
       if (!isAdmin) {
-        throw new ForbiddenException('Только SuperAdmin может обновлять роли');
+        throw new ForbiddenException('Только SuperAdmin или Admin может обновлять роли');
       }
 
       const role = await this._prisma.role.findUnique({
@@ -377,9 +430,9 @@ export class UserService {
 
   async deleteUser(id: string, currentUserId: string) {
     try {
-      const isAdmin = await this.isSuperAdmin(currentUserId);
+      const isAdmin = await this.isAdminOrSuper(currentUserId);
       if (!isAdmin) {
-        throw new ForbiddenException('Только SuperAdmin может удалять пользователей');
+        throw new ForbiddenException('Только SuperAdmin или Admin может удалять пользователей');
       }
 
       const user = await this._prisma.user.findUnique({
@@ -411,9 +464,9 @@ export class UserService {
 
   async deleteRole(id: string, currentUserId: string) {
     try {
-      const isAdmin = await this.isSuperAdmin(currentUserId);
+      const isAdmin = await this.isAdminOrSuper(currentUserId);
       if (!isAdmin) {
-        throw new ForbiddenException('Только SuperAdmin может удалять роли');
+        throw new ForbiddenException('Только SuperAdmin или Admin может удалять роли');
       }
 
       const role = await this._prisma.role.findUnique({
@@ -430,6 +483,40 @@ export class UserService {
     } catch (error) {
       throw new HttpException(
         'Ошибка при удалении роли: ' + error.message,
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+  }
+
+  async searchUsers(query: string, currentUserId: string) {
+    try {
+      const isAdmin = await this.isSuperAdmin(currentUserId);
+      if (!isAdmin) {
+        throw new ForbiddenException('Только SuperAdmin, Admin или WorkerSystem может искать пользователей');
+      }
+
+      const users = await this._prisma.user.findMany({
+        where: {
+          OR: [
+            { email: { contains: query, mode: 'insensitive' } },
+            { fullName: { contains: query, mode: 'insensitive' } },
+          ],
+          deletedAt: null,
+        },
+        include: {
+          memberships: {
+            where: { deletedAt: null },
+            include: {
+              role: { select: { id: true, name: true } },
+            },
+          },
+        },
+      });
+
+      return users;
+    } catch (error) {
+      throw new HttpException(
+        'Ошибка при поиске пользователей: ' + error.message,
         HttpStatus.BAD_REQUEST,
       );
     }

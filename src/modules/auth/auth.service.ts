@@ -11,7 +11,6 @@ export class AuthService {
     private readonly jwtService: JwtService,
   ) {}
 
-  // мок-пользователь (пока нет базы)
   private mockUser = {
     id: 'mock-uuid-123',
     email: 'mock.user_2025@example-secure.org',
@@ -23,13 +22,21 @@ export class AuthService {
     signInDTO: SignInDTO,
   ): Promise<{
     accessToken: string;
-    user: { id: string; email: string; fullName: string };
+    user: { id: string; email: string; fullName: string; role: string | null };
   }> {
     let user = await this.prisma.user.findUnique({
       where: { email: signInDTO.login },
+      include: {
+        memberships: {
+          where: { deletedAt: null }, 
+          include: { role: true }, 
+          take: 1, 
+        },
+      },
     });
 
-    // Если пользователь есть в БД
+    let roleName: string | null = null;
+
     if (user) {
       const isPasswordValid = await bcrypt.compare(
         signInDTO.password,
@@ -38,8 +45,8 @@ export class AuthService {
       if (!isPasswordValid) {
         throw new UnauthorizedException('Неверные учетные данные');
       }
+      roleName = user.memberships[0]?.role?.name ?? null;
     } else {
-      // Проверяем на мок-пользователя
       if (
         signInDTO.login !== this.mockUser.email ||
         signInDTO.password !== this.mockUser.password
@@ -47,18 +54,25 @@ export class AuthService {
         throw new UnauthorizedException('Неверные учетные данные');
       }
       user = this.mockUser as any;
+      roleName = 'SuperAdmin'; 
     }
 
     const payload = {
-      sub: user!.id ,
+      sub: user!.id,
       email: user!.email,
       fullName: user!.fullName,
+      role: roleName, 
     };
     const accessToken = await this.jwtService.signAsync(payload);
 
     return {
       accessToken,
-      user: { id: user!.id, email: user!.email, fullName: user!.fullName },
+      user: {
+        id: user!.id,
+        email: user!.email,
+        fullName: user!.fullName,
+        role: roleName,
+      },
     };
   }
 }

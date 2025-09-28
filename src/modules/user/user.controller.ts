@@ -11,7 +11,12 @@ import {
   HttpCode,
   HttpStatus,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBearerAuth,
+} from '@nestjs/swagger';
 import { UserService } from './user.service';
 import { CreateUserDto, UpdateUserDTO, GetListDTO, CreateRoleDTO } from './dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
@@ -89,8 +94,11 @@ export class UserController {
     description: 'Роль с таким именем уже существует',
   })
   @HttpCode(HttpStatus.CREATED)
-  async createRole(@Body() createRoleDto: CreateRoleDTO) {
-    return await this.userService.createRole(createRoleDto);
+  async createRole(
+    @Param('id') id: string,
+    @Body() createRoleDto: CreateRoleDTO,
+  ) {
+    return await this.userService.createRole(createRoleDto, id);
   }
 
   @Post('roles/list')
@@ -134,11 +142,7 @@ export class UserController {
     @Body() updateRoleDto: CreateRoleDTO,
     @Req() req,
   ) {
-    return await this.userService.updateRole(
-      id,
-      updateRoleDto,
-      req.user.sub,
-    );
+    return await this.userService.updateRole(id, updateRoleDto, req.user.sub);
   }
 
   @Delete('roles/:id')
