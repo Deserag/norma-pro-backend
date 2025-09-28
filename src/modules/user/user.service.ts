@@ -8,9 +8,6 @@ import { Prisma } from '@prisma/client';
 // {
 //   "email": "superadmin@example.com",
 //   "password": "SuperPass123",
-//   "fullName": "Super Admin",
-//   "companyId": null,
-//   "roleId": "1"
 // }
 @Injectable()
 export class UserService {
