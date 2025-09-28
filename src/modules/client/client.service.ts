@@ -32,7 +32,7 @@ import { Prisma } from '@prisma/client';
 export class ClientService {
   constructor(
     private _prisma: PrismaService,
-    private _userService: UserService,
+    // private _userService: UserService,
   ) {}
 
   private async isSuperAdminOrSystem(userId: string): Promise<boolean> {
@@ -677,17 +677,17 @@ export class ClientService {
 
       let targetUserId = userId;
       if (!userId && email && fullName && password) {
-        const newUser = await this._userService.createUser(
-          {
-            email,
-            fullName,
-            password,
-            roleId,
-            companyId,
-          },
-          currentUserId,
-        );
-        targetUserId = newUser.id;
+        // const newUser = await this._userService.createUser(
+        //   {
+        //     email,
+        //     fullName,
+        //     password,
+        //     roleId,
+        //     companyId,
+        //   },
+        //   currentUserId,
+        // );
+        // targetUserId = newUser.id;
       } else if (userId) {
         const existingUser = await this._prisma.user.findUnique({
           where: { id: userId, deletedAt: null },
